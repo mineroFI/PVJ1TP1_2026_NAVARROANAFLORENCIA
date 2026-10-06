@@ -15,6 +15,7 @@ public class PlayerController : MonoBehaviour
     private Vector3 movementInput;
     private bool isGrounded;
     private float originalJumpForce;
+    private Quaternion targetRotation;
 
     public float MoveSpeed
     {
@@ -26,6 +27,7 @@ public class PlayerController : MonoBehaviour
     {
         rb = GetComponent<Rigidbody>();
         originalJumpForce = jumpForce;
+        targetRotation = transform.rotation;
     }
 
     void Update()
@@ -40,15 +42,22 @@ public class PlayerController : MonoBehaviour
             isGrounded = false;
         }
 
+        // Se calcula la rotación objetivo aquí, pero se aplica en FixedUpdate
         if (movementInput.sqrMagnitude > 0.05f)
         {
-            Quaternion targetRotation = Quaternion.LookRotation(movementInput, Vector3.up);
-            transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, rotationSpeed * 100f * Time.deltaTime);
+            targetRotation = Quaternion.LookRotation(movementInput, Vector3.up);
         }
     }
 
     void FixedUpdate()
     {
+        
+        if (movementInput.sqrMagnitude > 0.05f)
+        {
+            Quaternion nextRotation = Quaternion.RotateTowards(rb.rotation, targetRotation, rotationSpeed * 100f * Time.fixedDeltaTime);
+            rb.MoveRotation(nextRotation);
+        }
+
         Vector3 targetVelocity = movementInput * moveSpeed;
         rb.linearVelocity = new Vector3(targetVelocity.x, rb.linearVelocity.y, targetVelocity.z);
     }
@@ -78,11 +87,7 @@ public class PlayerController : MonoBehaviour
     private IEnumerator SuperJumpRoutine(float multiplier, float duration)
     {
         jumpForce = originalJumpForce * multiplier;
-        Debug.Log("Power-Up activado. Salto potenciado.");
-
         yield return new WaitForSeconds(duration);
-
         jumpForce = originalJumpForce;
-        Debug.Log("Power-Up finalizado. Salto normal restablecido.");
     }
 }
