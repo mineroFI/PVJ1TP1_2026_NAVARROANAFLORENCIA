@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
@@ -13,6 +14,7 @@ public class PlayerController : MonoBehaviour
     private Rigidbody rb;
     private Vector3 movementInput;
     private bool isGrounded;
+    private float originalJumpForce;
 
     public float MoveSpeed
     {
@@ -23,25 +25,21 @@ public class PlayerController : MonoBehaviour
     void Awake()
     {
         rb = GetComponent<Rigidbody>();
+        originalJumpForce = jumpForce;
     }
 
     void Update()
     {
-        // Lectura de teclas
         float horizontal = Input.GetAxisRaw("Horizontal");
         float vertical = Input.GetAxisRaw("Vertical");
-
-        
         movementInput = new Vector3(horizontal, 0f, vertical).normalized;
 
-        // Salto
         if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
         {
             rb.linearVelocity = new Vector3(rb.linearVelocity.x, jumpForce, rb.linearVelocity.z);
             isGrounded = false;
         }
 
-        
         if (movementInput.sqrMagnitude > 0.05f)
         {
             Quaternion targetRotation = Quaternion.LookRotation(movementInput, Vector3.up);
@@ -51,7 +49,6 @@ public class PlayerController : MonoBehaviour
 
     void FixedUpdate()
     {
-        
         Vector3 targetVelocity = movementInput * moveSpeed;
         rb.linearVelocity = new Vector3(targetVelocity.x, rb.linearVelocity.y, targetVelocity.z);
     }
@@ -71,5 +68,21 @@ public class PlayerController : MonoBehaviour
     private void OnCollisionExit(Collision collision)
     {
         isGrounded = false;
+    }
+
+    public void ApplySuperJump(float multiplier, float duration)
+    {
+        StartCoroutine(SuperJumpRoutine(multiplier, duration));
+    }
+
+    private IEnumerator SuperJumpRoutine(float multiplier, float duration)
+    {
+        jumpForce = originalJumpForce * multiplier;
+        Debug.Log("Power-Up activado. Salto potenciado.");
+
+        yield return new WaitForSeconds(duration);
+
+        jumpForce = originalJumpForce;
+        Debug.Log("Power-Up finalizado. Salto normal restablecido.");
     }
 }
